@@ -1,6 +1,5 @@
 /.github               export-ignore
 /docs                  export-ignore
-/tests                 export-ignore
 /dev                   export-ignore
 /examples              export-ignore
 /vendor                export-ignore
@@ -11,6 +10,10 @@
 /.idea                 export-ignore
 /.vscode               export-ignore
 /Makefile              export-ignore
-/stubs                 export-ignore
-/scripts               export-ignore
-/composer.lock         export-ignore
+
+# IMPORTANT: keep these so create-project works
+# /stubs               (DO NOT export-ignore)
+# /scripts             (DO NOT export-ignore)
+
+# Optional — if you don't want to ship tests from the skeleton itself:
+# /tests               export-ignore
