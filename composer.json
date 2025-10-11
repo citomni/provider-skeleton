@@ -5,7 +5,7 @@
 	"extra": {
 		"citomni-skeleton": true
 	},
-	"license": "GPL-3.0-or-later",
+	"license": "MIT",
 	"homepage": "https://github.com/citomni/provider-skeleton",
 	"keywords": [
 		"citomni", "provider", "skeleton", "php", "psr-4",

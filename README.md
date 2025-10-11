@@ -9,6 +9,12 @@ Contributes **config** and **services** via boot constants - with optional **rou
 > Use with `citomni/http` if you expose HTTP routes; use `citomni/cli` if you wire commands into a runner.
 > For application skeletons, see `citomni/http-skeleton`, `citomni/cli-skeleton`, or `citomni/app-skeleton`.
 
+**Further reading**
+- Runtime / Execution Mode Layer — why CitOmni has exactly two modes and how deterministic merging works:  
+  https://github.com/citomni/docs/blob/main/concepts/runtime-modes.md
+- Provider Packages: Design, Semantics, and Best Practices — MAP_*/CFG_*, routes, precedence, testing:  
+  https://github.com/citomni/docs/blob/main/concepts/services-and-providers.md
+
 ---
 
 ## Requirements
@@ -81,6 +87,8 @@ $routes  = $this->app->cfg->routes; // raw array by design
 ```
 
 Services use the same precedence (app overrides provider overrides vendor).
+
+See also: https://github.com/citomni/docs/blob/main/concepts/runtime-modes.md
 
 ---
 
@@ -179,6 +187,8 @@ final class Services {
 * **Service definitions**: either FQCN or `['class' => FQCN, 'options' => [...]]`
 * **Ctor contract**: `__construct(App $app, array $options = [])`
 * **Routes** live in config and remain a raw array (performance)
+
+More details: https://github.com/citomni/docs/blob/main/concepts/services-and-providers.md
 
 ---
 
@@ -331,12 +341,12 @@ final class DemoModel extends BaseModel {
 <?php
 declare(strict_types=1);
 /*
- * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright (C) [START_YEAR]-[CURRENT_YEAR] [YOUR NAME]
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) [START_YEAR]-[CURRENT_YEAR] [YOUR NAME]
  *
- * [PACKAGE TITLE] - [One-line description]
+ * [PACKAGE TITLE] — [One-line description]
  * Source:  https://github.com/[your-vendor]/[your-repo]
- * License: See the LICENSE file for full terms.
+ * License: See the LICENSE file distributed with this source code.
  */
 ```
 
@@ -431,26 +441,89 @@ For integrated, framework-native testing (dev-only), consider `citomni/testing`.
 * PHPDoc & inline comments in **English**
 * Fail fast; do not catch unless necessary (global handler logs)
 
-See: CitOmni **CONVENTIONS.md** (in the kernel repo).
+---
+
+## Coding & Documentation Conventions
+
+All CitOmni projects follow the shared conventions documented here:
+[CitOmni Coding & Documentation Conventions](https://github.com/citomni/docs/blob/main/contribute/CONVENTIONS.md)
 
 ---
 
 ## License
 
-Released under **GNU GPL v3.0 or later**.
-See [LICENSE](LICENSE) for details.
+**CitOmni Provider Skeleton** is released under the **MIT License**.  
+See [LICENSE](LICENSE) for full license terms.
+
+For trademark usage and attribution requirements, see [NOTICE](NOTICE).
+
+---
+
+### FAQ
+
+**Q1: Can I use the name "CitOmni" in my own provider package?**  
+You may make factual references such as “Built for CitOmni” or “Compatible with CitOmni,”  
+provided that your use is purely descriptive and **does not** imply official status, endorsement,  
+or affiliation. You may **not**:
+- use “CitOmni” (or a confusingly similar name) as part of your company, domain, or top-level package name;
+- modify or combine the CitOmni logo with your own branding;
+- present your work as “official,” “certified,” or “approved” unless such status has been formally granted.
+
+See the [NOTICE](NOTICE) for full trademark policy.
+
+---
+
+**Q2: What does the MIT License allow me to do with this skeleton?**  
+Everything the MIT License normally allows — copy, modify, redistribute, and include  
+in your own projects (open or proprietary). You just need to:
+- keep the copyright and license notice in redistributed copies, and  
+- include your own license for your resulting work.
+
+---
+
+**Q3: If I build a proprietary or commercial provider from this skeleton, am I compliant?**  
+Yes. The skeleton is intentionally MIT-licensed so you can:
+- create your own provider package (open-source or closed-source),
+- license it under your chosen terms,
+- and distribute it via Packagist, private repositories, or direct delivery to clients.
+
+You do **not** need to open-source your derived provider.  
+However, you must **not** remove or misrepresent the CitOmni copyright  
+and trademark notices that remain in any retained portions of this template.
+
+---
+
+**Q4: Do I need to credit CitOmni in my README or composer.json?**  
+Attribution is appreciated but not legally required.  
+If you want to mention it, a simple line such as:
+
+> Built using the [CitOmni Provider Skeleton](https://github.com/citomni/provider-skeleton) (MIT)
+
+is perfect.
+
+---
+
+**Q5: Where can I find official CitOmni documentation and licensing guidance?**  
+- Docs hub: https://github.com/citomni/docs  
+- Provider best practices: https://github.com/citomni/docs/blob/main/concepts/services-and-providers.md  
+- Runtime & merge model: https://github.com/citomni/docs/blob/main/concepts/runtime-modes.md  
+- Trademark policy: [NOTICE](NOTICE)
 
 ---
 
 ## Trademarks
 
-"CitOmni" and the CitOmni logo are trademarks of Lars Grove Mortensen; factual references are allowed, but do not modify the marks, create confusingly similar logos, or imply endorsement.
+"CitOmni" and the CitOmni logo are trademarks of **Lars Grove Mortensen**.  
+You may make factual references to "CitOmni", but do not modify the marks, create confusingly similar logos,  
+or imply sponsorship, endorsement, or affiliation without prior written permission.  
+Do not register or use "citomni" (or confusingly similar terms) in company names, domains, social handles, or top-level vendor/package names.  
+For details, see the project's [NOTICE](NOTICE).
 
 ---
 
 ## Author
 
-Developed by **Lars Grove Mortensen** © 2012-2025
+Developed by **Lars Grove Mortensen** © 2012-present
 Contributions and pull requests are welcome.
 
 ---
