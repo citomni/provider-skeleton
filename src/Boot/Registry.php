@@ -15,7 +15,17 @@ declare(strict_types=1);
 
 namespace CitOmni\ProviderSkeleton\Boot;
 
-final class Services {
+/**
+ * Registry:
+ * Declares this package's contributions to the host app:
+ * - MAP_HTTP / MAP_CLI service bindings
+ * - CFG_HTTP / CFG_CLI config overlay
+ * - ROUTES_HTTP route definitions
+ *
+ * The App boot process will merge these into the final runtime.
+ */
+final class Registry {
+	
 	/**
 	 * HTTP service map.
 	 * Keys are $this->app->{id}; values are FQCN or ['class'=>..., 'options'=>...].
@@ -29,6 +39,7 @@ final class Services {
 		],
 	];
 
+
 	/**
 	 * HTTP cfg overlay (merged vendor → providers → app → env; last wins).
 	 * Includes provider routes.
@@ -41,6 +52,25 @@ final class Services {
 		'routes' => \CitOmni\ProviderSkeleton\Boot\Routes::MAP,
 	];
 
+
+	/**
+	 * HTTP routes.
+	 * Provider-scoped route definitions for the HTTP kernel.
+	 * Keys follow the same structure as global routes (exact paths and "regex").
+	 */
+	public const ROUTES_HTTP = [
+	
+		'/hello' => [
+			'controller' => \CitOmni\ProviderSkeleton\Controller\HelloController::class,
+			'methods'    => ['GET'],
+			'options'    => ['who' => 'world'],
+		],
+
+	];
+
+
+
+
 	/**
 	 * CLI service map (optional mirror). Kept minimal to avoid overhead.
 	 * NOTE: Real CLI wiring depends on citomni/cli runner. This is a service stub.
@@ -48,6 +78,7 @@ final class Services {
 	public const MAP_CLI = [
 		'hello' => \CitOmni\ProviderSkeleton\Command\HelloCommand::class,
 	];
+
 
 	/**
 	 * CLI cfg overlay (optional).
