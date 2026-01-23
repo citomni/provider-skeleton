@@ -49,7 +49,6 @@ final class Registry {
 			'enabled'  => true,
 			'greeting' => ['prefix' => 'Hello'],
 		],
-		'routes' => \CitOmni\ProviderSkeleton\Boot\Routes::MAP,
 	];
 
 
