@@ -1,7 +1,7 @@
 # CitOmni Provider Skeleton
 
 Minimal, deterministic **provider template** for CitOmni (PHP 8.2+).
-Contributes **config** and **services** via boot constants - with optional **routes**, **controllers**, **commands**, and **models**. No magic. No surprises.
+Contributes **config**, **service maps**, and optional **routes** via provider registry constants - with optional **controllers**, **commands**, **operations**, **repositories**, **services**, **utils**, and **exceptions**. No magic. No surprises.
 
 ♻️ **Green by design** - fewer CPU cycles, lower memory, faster deploys. **More requests per watt.**
 
@@ -45,16 +45,21 @@ From here you'll **rename** things (package name, namespace, classes) and turn i
 provider-skeleton/
   ├─ src/
   │  ├─ Boot/
-  │  │  ├─ Services.php         # MAP_*/CFG_* boot constants
-  │  │  └─ Routes.php           # Example /hello route map (optional)
+  │  │  └─ Registry.php         # MAP_HTTP / MAP_CLI / CFG_HTTP / CFG_CLI / ROUTES_HTTP / ROUTES_CLI
   │  ├─ Controller/
-  │  │  └─ HelloController.php  # Extends Kernel BaseController
+  │  │  └─ DemoController.php   # Demonstrates JSON, TemplateEngine, and raw HTML actions
   │  ├─ Command/
-  │  │  └─ HelloCommand.php     # Extends Kernel BaseCommand
+  │  │  └─ DemoCommand.php      # Extends Kernel BaseCommand
+  │  ├─ Operation/
+  │  │  └─ DemoOperation.php    # Extends Kernel BaseOperation
+  │  ├─ Repository/
+  │  │  └─ DemoRepository.php   # Extends Kernel BaseRepository
   │  ├─ Service/
-  │  │  └─ GreetingService.php  # Extends Kernel BaseService
-  │  └─ Model/
-  │     └─ DemoModel.php        # Extends Kernel BaseModel
+  │  │  └─ DemoService.php      # Extends Kernel BaseService
+  │  ├─ Util/
+  │  │  └─ DemoUtil.php         # Pure helper, no App dependency
+  │  └─ Exception/
+  │     └─ DemoException.php    # Package-level example exception
   ├─ tests/
   │  └─ SkeletonSmokeTest.php   # Tiny smoke-test stub (optional)
   ├─ stubs/
@@ -62,7 +67,7 @@ provider-skeleton/
   ├─ composer.json              # TYPE: project (template for create-project)
   ├─ README.md
   ├─ LICENSE
-  └─ .gitignore
+  └─ .gitignore  
 ```
 
 **PSR-4:** `"CitOmni\\ProviderSkeleton\\": "src/"`
@@ -127,12 +132,12 @@ See also: https://github.com/citomni/docs/blob/main/concepts/runtime-modes.md
 
 3. **Rename the boot provider class**
 
-   * Keep the file path: `src/Boot/Services.php`
-   * Change the class namespace to `YourVendor\YourProvider\Boot\Services`
+   * Keep the file path: `src/Boot/Registry.php`
+   * Change the class namespace to `YourVendor\YourProvider\Boot\Registry`
 
 4. **Decide what to keep**
 
-   * The examples (`GreetingService`, `HelloController`, `HelloCommand`, `DemoModel`) are there to smoke-test your wiring. Keep or prune freely.
+   * The demo examples (`DemoController`, `DemoCommand`, `DemoOperation`, `DemoRepository`, `DemoService`, `DemoUtil`, `DemoException`) are there to demonstrate the current CitOmni package structure and layer boundaries. Keep or prune freely.
 
 5. **Validate & autoload**
 
@@ -148,9 +153,10 @@ See also: https://github.com/citomni/docs/blob/main/concepts/runtime-modes.md
 
 ---
 
-## Provider contract (boot constants)
+## Provider contract (registry constants)
 
-Your provider contributes config and services through class constants. Only present constants are read.
+Your provider contributes services, config, and optional routes through `src/Boot/Registry.php`.
+Only present constants are read.
 
 ```php
 <?php
@@ -158,180 +164,127 @@ declare(strict_types=1);
 
 namespace CitOmni\ProviderSkeleton\Boot;
 
-final class Services {
+/**
+ * Registry:
+ * Declares this package's contributions to the host app:
+ * - MAP_HTTP / MAP_CLI service bindings
+ * - CFG_HTTP / CFG_CLI config overlay
+ * - ROUTES_HTTP route definitions
+ *
+ * The App boot process will merge these into the final runtime.
+ */
+final class Registry {
 	public const MAP_HTTP = [
-		'greeting' => [
-			'class'   => \CitOmni\ProviderSkeleton\Service\GreetingService::class,
-			'options' => ['prefix' => 'Hello'],
-		],
+		'demoService' => \CitOmni\ProviderSkeleton\Service\DemoService::class,
 	];
 
 	public const CFG_HTTP = [
 		'provider_skeleton' => [
-			'enabled'  => true,
-			'greeting' => ['prefix' => 'Hello'],
+			'enabled' => true,
 		],
-		'routes' => \CitOmni\ProviderSkeleton\Boot\Routes::MAP,
+	];
+
+	public const ROUTES_HTTP = [
+		'/demo/' => [
+			'controller' => \CitOmni\ProviderSkeleton\Controller\DemoController::class,
+			'action' => 'index',
+			'methods' => ['GET'],
+		],
+		'/demo/page/' => [
+			'controller' => \CitOmni\ProviderSkeleton\Controller\DemoController::class,
+			'action' => 'page',
+			'methods' => ['GET'],
+			'template_file' => 'public/demo/page.html',
+			'template_layer' => 'citomni/provider-skeleton',
+		],
+		'/demo/html/' => [
+			'controller' => \CitOmni\ProviderSkeleton\Controller\DemoController::class,
+			'action' => 'rawHtml',
+			'methods' => ['GET'],
+		],
 	];
 
 	public const MAP_CLI = [
-		'hello' => \CitOmni\ProviderSkeleton\Command\HelloCommand::class,
+		'demo' => \CitOmni\ProviderSkeleton\Command\DemoCommand::class,
+		'demoService' => \CitOmni\ProviderSkeleton\Service\DemoService::class,
 	];
 
-	public const CFG_CLI = [
-		'provider_skeleton' => ['enabled' => true],
-	];
+	public const CFG_CLI = self::CFG_HTTP;
 }
+
 ```
 
 * **Service definitions**: either FQCN or `['class' => FQCN, 'options' => [...]]`
 * **Ctor contract**: `__construct(App $app, array $options = [])`
-* **Routes** live in config and remain a raw array (performance)
+* **Routes** are contributed explicitly via `ROUTES_HTTP` and remain raw arrays in the merged runtime for performance.
 
 More details: https://github.com/citomni/docs/blob/main/concepts/services-and-providers.md
 
 ---
 
-## Example route & controller (optional)
+## Example controller actions (optional)
 
-```php
-<?php
-declare(strict_types=1);
+`DemoController` demonstrates three common CitOmni HTTP action styles:
 
-namespace CitOmni\ProviderSkeleton\Boot;
+- JSON response via the Response service
+- TemplateEngine rendering
+- direct HTML output without TemplateEngine
 
-final class Routes {
-	public const MAP = [
-		'/hello' => [
-			'controller' => \CitOmni\ProviderSkeleton\Controller\HelloController::class,
-			'methods'    => ['GET'],
-			'options'    => ['who' => 'world'],
-		],
-	];
-}
-```
+These are exposed through the example routes already shown in `Registry::ROUTES_HTTP`.
 
-```php
-<?php
-declare(strict_types=1);
+This keeps the README aligned with the current skeleton structure:
 
-namespace CitOmni\ProviderSkeleton\Controller;
+- `DemoController` owns HTTP transport concerns
+- `DemoOperation` is instantiated explicitly for orchestration
+- `DemoService` is accessed through the App service map
+- `DemoUtil` remains a pure helper with no App dependency
 
-use CitOmni\Kernel\Controller\BaseController;
-
-/**
- * HelloController - minimal demo controller.
- *
- * Behavior:
- * - Inherits $this->app and $this->routeConfig from BaseController.
- * - BaseController automatically calls ->init() after construction.
- */
-final class HelloController extends BaseController {
-	/** Lightweight, one-time setup (optional). */
-	protected function init(): void {
-		// no-op; keep it lean
-	}
-
-	/** GET /hello - emits tiny HTML. */
-	public function index(): void {
-		$who = (string)($this->routeConfig['options']['who'] ?? 'world');
-		$msg = $this->app->greeting->make($who);
-
-		echo "<!doctype html><meta charset=\"utf-8\"><title>Hello</title>";
-		echo "<p>{$msg}</p>";
-	}
-}
-```
+The goal is not to model a real domain controller, but to show the most common CitOmni controller patterns in a small and deterministic form.
 
 ---
 
-## Example service
+## Example service (optional)
 
-```php
-<?php
-declare(strict_types=1);
+`DemoService` demonstrates a minimal App-aware service-map entry.
 
-namespace CitOmni\ProviderSkeleton\Service;
+Typical responsibilities for provider services:
 
-use CitOmni\Kernel\Service\BaseService;
+- reusable App-aware behavior
+- lightweight derived formatting or diagnostics
+- infrastructure or cross-cutting helpers that do not belong in Repository or Util
 
-/**
- * GreetingService - tiny example with a configurable prefix.
- *
- * Typical usage:
- *   $this->app->greeting->make('Alice'); // "Hello, Alice"
- */
-final class GreetingService extends BaseService {
-	/** Lightweight, one-time setup (optional). */
-	protected function init(): void {
-		// reserved for future tweaks (e.g., precompute prefix)
-	}
-
-	public function make(string $name): string {
-		$cfgPrefix = $this->app->cfg->toArray()['provider_skeleton']['greeting']['prefix'] ?? null;
-		$prefix = \is_string($cfgPrefix) && $cfgPrefix !== '' ? $cfgPrefix : ($this->options['prefix'] ?? 'Hello');
-		return $prefix . ', ' . $name;
-	}
-}
-```
+Unlike `DemoUtil`, services are registered in the service map and accessed as `$this->app->{serviceId}`.
 
 ---
 
 ## Example command (optional)
 
-This skeleton assumes the kernel offers a minimal `\CitOmni\Kernel\Command\BaseCommand` (constructor + `init()` + abstract `run()`), and your CLI runner calls `$app->hello->run($argv)`.
+`DemoCommand` demonstrates the CLI side of the current CitOmni package structure.
 
-```php
-<?php
-declare(strict_types=1);
+It is intentionally small and focuses on the correct layer boundaries:
 
-namespace CitOmni\ProviderSkeleton\Command;
+- the command owns CLI transport concerns such as reading arguments and writing output
+- `DemoOperation` is instantiated explicitly for transport-agnostic orchestration
+- `DemoService` is accessed through the App service map for reusable App-aware behavior
+- `DemoUtil` is used for pure helper logic with no App dependency
 
-use CitOmni\Kernel\Command\BaseCommand;
+This skeleton assumes the kernel provides a minimal `\CitOmni\Kernel\Command\BaseCommand` with a constructor, an optional `init()` hook, and an abstract `run()` method, and that the CLI runner dispatches the registered `demo` command.
 
-/**
- * HelloCommand - example command implementing BaseCommand contract.
- */
-final class HelloCommand extends BaseCommand {
-	protected function init(): void {
-		// validate/normalize $this->options if needed
-	}
-
-	public function run(array $argv = []): int {
-		$name = $argv[0] ?? ($this->options['default_name'] ?? 'world');
-		$line = $this->app->greeting->make($name);
-		\fwrite(\STDOUT, $line . \PHP_EOL);
-		return 0;
-	}
-}
-```
+The purpose of `DemoCommand` is not to model a real domain command, but to show how a provider package should structure CLI code in the current CitOmni architecture.
 
 ---
 
-## Example model (optional)
+## Example operation, repository, service, and util (optional)
 
-```php
-<?php
-declare(strict_types=1);
+The provider skeleton includes layered examples that reflect the current CitOmni architecture:
 
-namespace CitOmni\ProviderSkeleton\Model;
+- `DemoOperation` demonstrates transport-agnostic orchestration.
+- `DemoRepository` demonstrates repository-owned SQL through the shared Db service.
+- `DemoService` demonstrates an App-aware reusable service-map entry.
+- `DemoUtil` demonstrates a pure helper with no App dependency.
+- `DemoException` demonstrates package-level failure semantics.
 
-use CitOmni\Kernel\Model\BaseModel;
-
-/**
- * DemoModel - optional skeleton demonstrating BaseModel constructor pattern.
- */
-final class DemoModel extends BaseModel {
-	protected function init(): void {
-		// precompute cheap derived state if needed
-	}
-
-	/** @return array<int,string> */
-	public function listSamples(): array {
-		return ['alpha', 'beta', 'gamma'];
-	}
-}
-```
+This replaces the old model-centric example structure.
 
 ---
 
@@ -361,7 +314,7 @@ declare(strict_types=1);
    Update PSR-4 and classes to `YourVendor\YourProvider\...` (see the sed/PowerShell snippets above).
 
 3. **Rename boot class**
-   Keep `src/Boot/Services.php`, but set the FQCN to `YourVendor\YourProvider\Boot\Services`.
+   Keep `src/Boot/Registry.php`, but set the FQCN to `YourVendor\YourProvider\Boot\Registry`.
 
 4. **Validate & autoload**
 
@@ -391,7 +344,7 @@ composer require your-vendor/your-provider
 <?php
 // app/config/providers.php
 return [
-	\YourVendor\YourProvider\Boot\Services::class,
+	\YourVendor\YourProvider\Boot\Registry::class,
 ];
 ```
 
@@ -402,8 +355,10 @@ return [
 // app/config/citomni_http_cfg.php
 return [
 	'your_provider' => [
-		'enabled'  => true,
-		'greeting' => ['prefix' => 'Hej'],
+		'enabled' => true,
+		'demo' => [
+			'feature_flag' => true,
+		],
 	],
 ];
 ```
@@ -441,11 +396,7 @@ For integrated, framework-native testing (dev-only), consider `citomni/testing`.
 * PHPDoc & inline comments in **English**
 * Fail fast; do not catch unless necessary (global handler logs)
 
----
-
-## Coding & Documentation Conventions
-
-All CitOmni projects follow the shared conventions documented here:
+All CitOmni projects also follow the shared conventions documented here:
 [CitOmni Coding & Documentation Conventions](https://github.com/citomni/docs/blob/main/contribute/CONVENTIONS.md)
 
 ---
