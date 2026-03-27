@@ -16,103 +16,89 @@ declare(strict_types=1);
 namespace CitOmni\ProviderSkeleton\Command;
 
 use CitOmni\Kernel\Command\BaseCommand;
-use CitOmni\ProviderSkeleton\Operation\DemoOperation;
-use CitOmni\ProviderSkeleton\Util\DemoUtil;
 
 /**
- * DemoCommand.
- *
- * Minimal CLI command example for the provider skeleton.
+ * Demonstrate the provider skeleton CLI command contract.
  *
  * Behavior:
- * - Demonstrates explicit operation instantiation in CLI mode.
- * - Demonstrates service usage through the App service map.
- * - Demonstrates pure helper usage through DemoUtil.
- * - Produces deterministic text output for smoke tests and examples.
+ * - Uses the declarative BaseCommand signature format.
+ * - Reads one optional positional argument and a few typed options.
+ * - Produces deterministic CLI output for smoke tests and examples.
+ * - Optionally uses the provider's greeting service when available.
  *
  * Notes:
- * - Keeps transport concerns in the command.
- * - Delegates orchestration to the operation layer.
- * - Avoids SQL outside the repository layer.
+ * - Commands are transport adapters and should stay thin.
+ * - This example intentionally avoids SQL and repository access.
+ * - The command is registered through Registry::COMMANDS_CLI.
  */
 final class DemoCommand extends BaseCommand {
 
 	/**
-	 * Run the demo command.
+	 * Declare the accepted CLI arguments and options.
 	 *
-	 * Behavior:
-	 * - Reads an optional search term from CLI args.
-	 * - Loads rows through DemoOperation.
-	 * - Decorates rows through DemoService.
-	 * - Applies optional in-memory filtering in the command.
-	 * - Writes a tiny deterministic report to STDOUT.
-	 *
-	 * Expected optional argument:
-	 * - argv[0]: search term
-	 *
-	 * @param array<int,string> $args Raw CLI arguments excluding the command name.
-	 * @return int Exit status code.
+	 * @return array<string, array<string, mixed>> Command signature definition.
 	 */
-	public function run(array $args = []): int {
-		$search = DemoUtil::normalizeSampleName((string)($args[0] ?? ''));
-		$operation = new DemoOperation($this->app);
-
-		$result = $operation->listSamples();
-		$items = $this->app->demoService->decorateSamples($result['items'] ?? []);
-
-		if ($search !== '') {
-			$needle = \strtolower($search);
-			$filtered = [];
-
-			foreach ($items as $item) {
-				$name = \strtolower((string)($item['name'] ?? ''));
-				if (\str_contains($name, $needle)) {
-					$filtered[] = $item;
-				}
-			}
-
-			$items = $filtered;
-		}
-
-		$diagnostics = $this->app->demoService->getDiagnostics();
-
-		$this->writeLine('Provider skeleton demo command');
-		$this->writeLine('--------------------------------');
-		$this->writeLine('Total rows: ' . (string)\count($items));
-		$this->writeLine('Query count: ' . (string)($diagnostics['query_count'] ?? 0));
-
-		if ($search !== '') {
-			$this->writeLine('Search filter: ' . $search);
-		}
-
-		$this->writeLine('');
-
-		if ($items === []) {
-			$this->writeLine('No demo rows found.');
-			return 0;
-		}
-
-		foreach ($items as $item) {
-			$this->writeLine(
-				'#' . (string)($item['id'] ?? 0)
-				. ' '
-				. (string)($item['name'] ?? '')
-				. ' ['
-				. (string)($item['status_label'] ?? 'unknown')
-				. ']'
-			);
-		}
-
-		return 0;
+	protected function signature(): array {
+		return [
+			'arguments' => [
+				'name' => [
+					'description' => 'Name to greet',
+					'required'    => false,
+					'default'     => 'World',
+				],
+			],
+			'options' => [
+				'prefix' => [
+					'short'       => 'p',
+					'type'        => 'string',
+					'description' => 'Greeting prefix override',
+					'default'     => 'Hello',
+				],
+				'repeat' => [
+					'short'       => 'r',
+					'type'        => 'int',
+					'description' => 'Number of times to print the greeting',
+					'default'     => 1,
+				],
+				'shout' => [
+					'short'       => 's',
+					'type'        => 'bool',
+					'description' => 'Uppercase the final output',
+				],
+			],
+		];
 	}
 
 	/**
-	 * Write one line to STDOUT.
+	 * Execute the command after argv parsing and validation.
 	 *
-	 * @param string $text Output text.
-	 * @return void
+	 * @return int Exit status code.
 	 */
-	private function writeLine(string $text): void {
-		\fwrite(\STDOUT, $text . \PHP_EOL);
+	protected function execute(): int {
+		$name = $this->argString('name');
+		$prefix = $this->getString('prefix');
+		$repeat = $this->getInt('repeat');
+		$shout = $this->getBool('shout');
+
+		if ($repeat < 1) {
+			$this->error('--repeat must be at least 1.');
+			return self::FAILURE;
+		}
+
+		$line = $prefix . ', ' . $name . '!';
+
+		if ($shout) {
+			$line = \mb_strtoupper($line);
+		}
+
+		for ($i = 0; $i < $repeat; $i++) {
+			$this->stdout($line);
+		}
+
+		$this->info('Command: ' . $this->commandName);
+		$this->info('Completed successfully.');
+
+		return self::SUCCESS;
 	}
+
 }

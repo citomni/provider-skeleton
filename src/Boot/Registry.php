@@ -16,75 +16,88 @@ declare(strict_types=1);
 namespace CitOmni\ProviderSkeleton\Boot;
 
 /**
- * Registry:
- * Declares this package's contributions to the host app:
- * - MAP_HTTP / MAP_CLI service bindings
- * - CFG_HTTP / CFG_CLI config overlay
- * - ROUTES_HTTP route definitions
+ * Declare this provider package's boot contributions.
  *
- * The App boot process will merge these into the final runtime.
+ * Behavior:
+ * - Registers HTTP and CLI service bindings.
+ * - Registers HTTP cfg overlays.
+ * - Registers HTTP routes.
+ * - Registers CLI commands through COMMANDS_CLI.
+ *
+ * Notes:
+ * - Commands belong in COMMANDS_CLI, not in MAP_CLI.
+ * - Dispatch maps must remain separate from CFG constants.
+ * - CLI mode may reuse the same provider cfg/service baselines as HTTP mode.
  */
 final class Registry {
-	
+
 	/**
 	 * HTTP service map.
-	 * Keys are $this->app->{id}; values are FQCN or ['class'=>..., 'options'=>...].
+	 *
+	 * @var array<string, string|array<string, mixed>>
 	 */
 	public const MAP_HTTP = [
 		'greeting' => [
 			'class'   => \CitOmni\ProviderSkeleton\Service\GreetingService::class,
 			'options' => [
-				'prefix' => 'Hello'
+				'prefix' => 'Hello',
 			],
 		],
 	];
 
-
 	/**
-	 * HTTP cfg overlay (merged vendor → providers → app → env; last wins).
-	 * Includes provider routes.
+	 * HTTP cfg overlay.
+	 *
+	 * @var array<string, mixed>
 	 */
 	public const CFG_HTTP = [
 		'provider_skeleton' => [
 			'enabled'  => true,
-			'greeting' => ['prefix' => 'Hello'],
+			'greeting' => [
+				'prefix' => 'Hello',
+			],
 		],
 	];
-
 
 	/**
 	 * HTTP routes.
-	 * Provider-scoped route definitions for the HTTP kernel.
-	 * Keys follow the same structure as global routes (exact paths and "regex").
+	 *
+	 * @var array<string, array<string, mixed>>
 	 */
 	public const ROUTES_HTTP = [
-	
 		'/hello' => [
 			'controller' => \CitOmni\ProviderSkeleton\Controller\HelloController::class,
+			'action'     => 'index',
 			'methods'    => ['GET'],
-			'options'    => ['who' => 'world'],
+			'options'    => [
+				'who' => 'world',
+			],
 		],
-
 	];
 
-
-
+	/**
+	 * CLI service map.
+	 *
+	 * @var array<string, string|array<string, mixed>>
+	 */
+	public const MAP_CLI = self::MAP_HTTP;
 
 	/**
-	 * CLI service map (optional mirror). Kept minimal to avoid overhead.
-	 * NOTE: Real CLI wiring depends on citomni/cli runner. This is a service stub.
+	 * CLI cfg overlay.
+	 *
+	 * @var array<string, mixed>
 	 */
-	public const MAP_CLI = [
-		'hello' => \CitOmni\ProviderSkeleton\Command\HelloCommand::class,
-	];
-
+	public const CFG_CLI = self::CFG_HTTP;
 
 	/**
-	 * CLI cfg overlay (optional).
+	 * CLI commands.
+	 *
+	 * @var array<string, array<string, mixed>>
 	 */
-	public const CFG_CLI = [
-		'provider_skeleton' => [
-			'enabled' => true,
+	public const COMMANDS_CLI = [
+		'provider-skeleton:demo' => [
+			'command'     => \CitOmni\ProviderSkeleton\Command\DemoCommand::class,
+			'description' => 'Run the provider skeleton demo command',
 		],
 	];
 }
