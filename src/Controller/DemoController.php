@@ -37,8 +37,16 @@ use CitOmni\ProviderSkeleton\Util\DemoUtil;
  *   1) JSON response
  *   2) TemplateEngine render
  *   3) Raw HTML without TemplateEngine
+ * - Demonstrates explicit request-path semantics:
+ *   - pathFromAppRoot() for app-/route-facing paths
+ *   - pathRaw() for transport-facing/raw request paths
  */
 final class DemoController extends BaseController {
+
+
+	// ----------------------------------------------------------------
+	// Lifecycle
+	// ----------------------------------------------------------------
 
 	/**
 	 * Lightweight per-request bootstrap.
@@ -48,6 +56,16 @@ final class DemoController extends BaseController {
 	protected function init(): void {
 		// Keep lean. No heavy I/O here.
 	}
+
+
+
+
+
+
+
+	// ----------------------------------------------------------------
+	// JSON endpoints
+	// ----------------------------------------------------------------
 
 	/**
 	 * GET /demo
@@ -66,7 +84,7 @@ final class DemoController extends BaseController {
 	 * @throws \JsonException When JSON encoding fails.
 	 */
 	public function index(): never {
-		$search = DemoUtil::normalizeSampleName((string)$this->app->request->get('q', ''));
+		$search = DemoUtil::normalizeSampleName((string)($this->app->request->get('q') ?? ''));
 		$operation = new DemoOperation($this->app);
 
 		$result = $operation->listSamples();
@@ -95,10 +113,104 @@ final class DemoController extends BaseController {
 				'total' => \count($items),
 				'query_count' => (int)($diagnostics['query_count'] ?? 0),
 				'request_method' => $this->app->request->method(),
-				'request_path' => $this->app->request->path(),
+				'request_path_from_app_root' => $this->app->request->pathFromAppRoot(),
+				'request_path_raw' => $this->app->request->pathRaw(),
 			],
 		], 200);
 	}
+
+	/**
+	 * GET /demo/show?id=123
+	 *
+	 * Return one demo sample as JSON.
+	 *
+	 * @return never
+	 *
+	 * @throws \JsonException When JSON encoding fails.
+	 */
+	public function show(): never {
+		$id = (int)($this->app->request->get('id') ?? 0);
+
+		if ($id < 1) {
+			$this->app->response->jsonProblem(
+				'Invalid request',
+				400,
+				'Parameter `id` must be a positive integer.'
+			);
+		}
+
+		$operation = new DemoOperation($this->app);
+		$item = $operation->findSampleById($id);
+
+		if ($item === null) {
+			$this->app->response->jsonProblem(
+				'Not found',
+				404,
+				'Demo sample was not found.'
+			);
+		}
+
+		$decorated = $this->app->demoService->decorateSamples([$item]);
+
+		$this->app->response->jsonStatusNoCache([
+			'ok' => true,
+			'data' => $decorated[0] ?? null,
+			'meta' => [
+				'request_method' => $this->app->request->method(),
+				'request_path_from_app_root' => $this->app->request->pathFromAppRoot(),
+			],
+		], 200);
+	}
+
+	/**
+	 * POST /demo/create
+	 *
+	 * Create one demo sample and return the new id as JSON.
+	 *
+	 * @return never
+	 *
+	 * @throws \JsonException When JSON encoding fails.
+	 */
+	public function create(): never {
+		$name = DemoUtil::normalizeSampleName((string)($this->app->request->post('name') ?? ''));
+		$isActiveRaw = $this->app->request->post('is_active') ?? '1';
+
+		if (!DemoUtil::isValidSampleName($name)) {
+			$this->app->response->jsonProblem(
+				'Validation failed',
+				422,
+				'Parameter `name` is missing or outside the accepted length.'
+			);
+		}
+
+		$isActive = \in_array((string)$isActiveRaw, ['1', 'true', 'on', 'yes'], true);
+
+		$operation = new DemoOperation($this->app);
+		$newId = $operation->createSample($name, $isActive);
+
+		$this->app->response->jsonStatusNoCache([
+			'ok' => true,
+			'data' => [
+				'id' => $newId,
+			],
+			'meta' => [
+				'request_method' => $this->app->request->method(),
+				'request_path_from_app_root' => $this->app->request->pathFromAppRoot(),
+			],
+		], 201);
+	}
+
+
+
+
+
+
+
+
+
+	// ----------------------------------------------------------------
+	// TemplateEngine page
+	// ----------------------------------------------------------------
 
 	/**
 	 * GET /demo/page
@@ -132,11 +244,14 @@ final class DemoController extends BaseController {
 			],
 			'request' => [
 				'method' => $this->app->request->method(),
-				'path' => $this->app->request->path(),
+				'path_from_app_root' => $this->app->request->pathFromAppRoot(),
+				'path_raw' => $this->app->request->pathRaw(),
 			],
 		], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES);
 
-		$this->app->tplEngine->render($this->routeConfig['template_file'] . '@' . $this->routeConfig['template_layer'],	[
+		$this->app->tplEngine->render(
+			$this->routeConfig['template_file'] . '@' . $this->routeConfig['template_layer'],
+			[
 				'noindex' => 1,
 				'canonical' => \defined('CITOMNI_PUBLIC_ROOT_URL') ? \CITOMNI_PUBLIC_ROOT_URL . '/demo/page/' : '',
 				'meta_title' => 'Provider skeleton demo page',
@@ -147,10 +262,20 @@ final class DemoController extends BaseController {
 				'items' => $items,
 				'total' => \count($items),
 				'details_preformatted' => $details,
-		]);
-
+			]
+		);
 	}
 
+
+
+
+
+
+
+
+	// ----------------------------------------------------------------
+	// Direct HTML page
+	// ----------------------------------------------------------------
 
 	/**
 	 * GET /demo/html
@@ -206,86 +331,12 @@ final class DemoController extends BaseController {
 		}
 
 		$html .= '<hr>';
-		$html .= '<p><small>Request: '
-			. $e($this->app->request->method())
-			. ' '
-			. $e($this->app->request->path())
-			. '</small></p>';
+		$html .= '<p><small>Request method: ' . $e($this->app->request->method()) . '</small></p>';
+		$html .= '<p><small>Path from app root: ' . $e($this->app->request->pathFromAppRoot()) . '</small></p>';
+		$html .= '<p><small>Raw path: ' . $e($this->app->request->pathRaw()) . '</small></p>';
 		$html .= '</body></html>';
 
 		$this->app->response->html($html, 200);
 	}
 
-	/**
-	 * GET /demo/show?id=123
-	 *
-	 * Return one demo sample as JSON.
-	 *
-	 * @return never
-	 *
-	 * @throws \JsonException When JSON encoding fails.
-	 */
-	public function show(): never {
-		$id = (int)$this->app->request->get('id', 0);
-
-		if ($id < 1) {
-			$this->app->response->jsonProblem(
-				'Invalid request',
-				400,
-				'Parameter `id` must be a positive integer.'
-			);
-		}
-
-		$operation = new DemoOperation($this->app);
-		$item = $operation->findSampleById($id);
-
-		if ($item === null) {
-			$this->app->response->jsonProblem(
-				'Not found',
-				404,
-				'Demo sample was not found.'
-			);
-		}
-
-		$decorated = $this->app->demoService->decorateSamples([$item]);
-
-		$this->app->response->jsonStatusNoCache([
-			'ok' => true,
-			'data' => $decorated[0] ?? null,
-		], 200);
-	}
-
-	/**
-	 * POST /demo/create
-	 *
-	 * Create one demo sample and return the new id as JSON.
-	 *
-	 * @return never
-	 *
-	 * @throws \JsonException When JSON encoding fails.
-	 */
-	public function create(): never {
-		$name = DemoUtil::normalizeSampleName((string)$this->app->request->post('name', ''));
-		$isActiveRaw = $this->app->request->post('is_active', '1');
-
-		if (!DemoUtil::isValidSampleName($name)) {
-			$this->app->response->jsonProblem(
-				'Validation failed',
-				422,
-				'Parameter `name` is missing or outside the accepted length.'
-			);
-		}
-
-		$isActive = \in_array((string)$isActiveRaw, ['1', 'true', 'on', 'yes'], true);
-
-		$operation = new DemoOperation($this->app);
-		$newId = $operation->createSample($name, $isActive);
-
-		$this->app->response->jsonStatusNoCache([
-			'ok' => true,
-			'data' => [
-				'id' => $newId,
-			],
-		], 201);
-	}
 }
