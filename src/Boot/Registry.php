@@ -19,9 +19,9 @@ namespace CitOmni\ProviderSkeleton\Boot;
  * Declare this provider package's boot contributions.
  *
  * Behavior:
- * - Registers HTTP and CLI service bindings.
- * - Registers HTTP cfg overlays.
- * - Registers HTTP routes.
+ * - Registers HTTP and CLI service maps.
+ * - Registers HTTP and CLI cfg overlays.
+ * - Registers HTTP routes through ROUTES_HTTP.
  * - Registers CLI commands through COMMANDS_CLI.
  *
  * Notes:
@@ -65,7 +65,7 @@ final class Registry {
 	 * @var array<string, array<string, mixed>>
 	 */
 	public const ROUTES_HTTP = [
-		'/hello' => [
+		'/hello.html' => [
 			'controller' => \CitOmni\ProviderSkeleton\Controller\HelloController::class,
 			'action'     => 'index',
 			'methods'    => ['GET'],
@@ -78,12 +78,18 @@ final class Registry {
 	/**
 	 * CLI service map.
 	 *
+	 * Reuses the HTTP service map because the demo command uses the same
+	 * greeting service. Real packages may keep CLI services narrower.
+	 *
 	 * @var array<string, string|array<string, mixed>>
 	 */
 	public const MAP_CLI = self::MAP_HTTP;
 
 	/**
 	 * CLI cfg overlay.
+	 *
+	 * Reuses the HTTP cfg overlay because this skeleton exposes the same
+	 * package-level defaults in both modes.
 	 *
 	 * @var array<string, mixed>
 	 */
