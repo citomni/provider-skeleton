@@ -1,6 +1,6 @@
 {
 	"name": "citomni/provider-skeleton",
-	"description": "Template provider for CitOmni apps: boot constants (MAP/CFG), example route/controller, service, command, and model. Ultra-lean, deterministic, PHP 8.2+.",
+	"description": "Template provider for CitOmni apps: Boot constants (MAP/CFG), example route/controller, service, command, and model. Ultra-lean, deterministic, PHP",
 	"type": "project",
 	"extra": {
 		"citomni-skeleton": true
@@ -8,9 +8,20 @@
 	"license": "MIT",
 	"homepage": "https://github.com/citomni/provider-skeleton",
 	"keywords": [
-		"citomni", "provider", "skeleton", "php", "psr-4",
-		"low-overhead", "deterministic", "php8", "green-by-design",
-		"routes", "controller", "service", "command", "framework"
+		"citomni",
+		"provider",
+		"skeleton",
+		"php",
+		"psr-4",
+		"low-overhead",
+		"deterministic",
+		"php8",
+		"green-by-design",
+		"routes",
+		"controller",
+		"service",
+		"command",
+		"framework"
 	],
 	"require": {
 		"php": "^8.2",
