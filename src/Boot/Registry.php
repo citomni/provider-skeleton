@@ -19,6 +19,8 @@ namespace CitOmni\ProviderSkeleton\Boot;
  * Declare this provider package's boot contributions.
  *
  * Behavior:
+ * - Registers shared service maps through MAP_COMMON.
+ * - Registers shared cfg overlays through CFG_COMMON.
  * - Registers HTTP and CLI service maps.
  * - Registers HTTP and CLI cfg overlays.
  * - Registers HTTP routes through ROUTES_HTTP.
@@ -27,9 +29,45 @@ namespace CitOmni\ProviderSkeleton\Boot;
  * Notes:
  * - Commands belong in COMMANDS_CLI, not in MAP_CLI.
  * - Dispatch maps must remain separate from CFG constants.
- * - CLI mode may reuse the same provider cfg/service baselines as HTTP mode.
+ * - Shared services and cfg defaults belong in MAP_COMMON and CFG_COMMON.
+ * - Mode-specific constants should only contain genuinely mode-specific entries.
  */
 final class Registry {
+
+
+	/**
+	 * Shared service map.
+	 *
+	 * Services declared here are available in both HTTP and CLI mode.
+	 * Use this for transport-neutral singleton services that can safely be
+	 * resolved through $this->app->{id} from either runtime.
+	 *
+	 * Notes:
+	 * - Keep controllers, commands, operations, and repositories out of the service map.
+	 * - Use MAP_HTTP or MAP_CLI only for genuinely mode-specific services.
+	 *
+	 * @var array<string, string|array<string, mixed>>
+	 */
+	public const MAP_COMMON = [
+	];
+
+
+	/**
+	 * Shared cfg overlay.
+	 *
+	 * Config declared here is available in both HTTP and CLI mode.
+	 * Use this for package defaults that are not tied to one transport runtime.
+	 *
+	 * Notes:
+	 * - Keep dispatch maps out of cfg constants.
+	 * - Use CFG_HTTP or CFG_CLI only for genuinely mode-specific defaults.
+	 * - App-level config may override these defaults through the normal CitOmni merge flow.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public const CFG_COMMON = [
+	];
+
 
 	/**
 	 * HTTP service map.
