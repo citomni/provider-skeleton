@@ -33,11 +33,6 @@
 /.psalm/cache/
 /.php-cs-fixer.cache
 
-# Generated docs or local reports
-/docs/_build/
-/docs/.cache/
-/reports/
-
 # Node dependencies, if temporary frontend tooling is ever used
 /node_modules/
 /package-lock.json

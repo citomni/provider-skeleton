@@ -18,130 +18,117 @@ namespace CitOmni\ProviderSkeleton\Boot;
 /**
  * Declare this provider package's boot contributions.
  *
+ * CitOmni reads these constants when composing the active HTTP or CLI app.
+ * All supported contribution constants are documented below but intentionally
+ * left undeclared. Uncomment only those the concrete package actually needs.
+ *
  * Behavior:
- * - Registers shared service maps through MAP_COMMON.
- * - Registers shared cfg overlays through CFG_COMMON.
- * - Registers HTTP and CLI service maps.
- * - Registers HTTP and CLI cfg overlays.
- * - Registers HTTP routes through ROUTES_HTTP.
- * - Registers CLI commands through COMMANDS_CLI.
+ * - MAP_COMMON contributes services shared by HTTP and CLI.
+ * - MAP_HTTP and MAP_CLI contribute mode-specific services.
+ * - CFG_COMMON contributes configuration shared by HTTP and CLI.
+ * - CFG_HTTP and CFG_CLI contribute mode-specific configuration.
+ * - ROUTES_HTTP contributes HTTP dispatch entries.
+ * - COMMANDS_CLI contributes CLI dispatch entries.
  *
  * Notes:
- * - Commands belong in COMMANDS_CLI, not in MAP_CLI.
- * - Dispatch maps must remain separate from CFG constants.
- * - Shared services and cfg defaults belong in MAP_COMMON and CFG_COMMON.
- * - Mode-specific constants should only contain genuinely mode-specific entries.
+ * - Service definitions may be an FQCN string or an array containing "class"
+ *   and optional "options".
+ * - Within one provider, mode-specific service definitions override shared
+ *   service definitions with the same service ID.
+ * - Within one provider, mode-specific configuration is merged after shared
+ *   configuration, so mode-specific values win on conflicting associative keys.
+ * - HTTP routes and CLI commands are dispatch maps, not configuration values.
+ * - Keep SQL in Repositories and transport concerns in Controllers or Commands.
  */
 final class Registry {
 
+	/**
+	 * Services available in both HTTP and CLI mode.
+	 *
+	 * Typical entries use either a service class directly or a class/options
+	 * definition. Services are resolved lazily through the App service map.
+	 *
+	 * @var array<string, class-string|array{class: class-string, options?: array<array-key, mixed>}>
+	 */
+	// public const array MAP_COMMON = [
+	// ];
 
 	/**
-	 * Shared service map.
+	 * Services available only in HTTP mode.
 	 *
-	 * Services declared here are available in both HTTP and CLI mode.
-	 * Use this for transport-neutral singleton services that can safely be
-	 * resolved through $this->app->{id} from either runtime.
+	 * Use this only when a service genuinely depends on the HTTP runtime.
+	 * Definitions here take precedence over MAP_COMMON for the same service ID.
 	 *
-	 * Notes:
-	 * - Keep controllers, commands, operations, and repositories out of the service map.
-	 * - Use MAP_HTTP or MAP_CLI only for genuinely mode-specific services.
-	 *
-	 * @var array<string, string|array<string, mixed>>
+	 * @var array<string, class-string|array{class: class-string, options?: array<array-key, mixed>}>
 	 */
-	public const MAP_COMMON = [
-	];
-
+	// public const array MAP_HTTP = [
+	// ];
 
 	/**
-	 * Shared cfg overlay.
+	 * Services available only in CLI mode.
 	 *
-	 * Config declared here is available in both HTTP and CLI mode.
-	 * Use this for package defaults that are not tied to one transport runtime.
+	 * Use this only when a service genuinely depends on the CLI runtime.
+	 * Definitions here take precedence over MAP_COMMON for the same service ID.
 	 *
-	 * Notes:
-	 * - Keep dispatch maps out of cfg constants.
-	 * - Use CFG_HTTP or CFG_CLI only for genuinely mode-specific defaults.
-	 * - App-level config may override these defaults through the normal CitOmni merge flow.
-	 *
-	 * @var array<string, mixed>
+	 * @var array<string, class-string|array{class: class-string, options?: array<array-key, mixed>}>
 	 */
-	public const CFG_COMMON = [
-	];
-
+	// public const array MAP_CLI = [
+	// ];
 
 	/**
-	 * HTTP service map.
+	 * Configuration defaults shared by HTTP and CLI mode.
 	 *
-	 * @var array<string, string|array<string, mixed>>
+	 * Keep package-owned defaults under package-specific keys. Concrete host apps
+	 * may override provider configuration through the normal CitOmni config flow.
+	 *
+	 * @var array<string|int, mixed>
 	 */
-	public const MAP_HTTP = [
-		'greeting' => [
-			'class'   => \CitOmni\ProviderSkeleton\Service\GreetingService::class,
-			'options' => [
-				'prefix' => 'Hello',
-			],
-		],
-	];
+	// public const array CFG_COMMON = [
+	// ];
 
 	/**
-	 * HTTP cfg overlay.
+	 * Configuration defaults used only in HTTP mode.
 	 *
-	 * @var array<string, mixed>
+	 * These values are merged after CFG_COMMON and therefore win on conflicting
+	 * associative keys within this provider.
+	 *
+	 * @var array<string|int, mixed>
 	 */
-	public const CFG_HTTP = [
-		'provider_skeleton' => [
-			'enabled'  => true,
-			'greeting' => [
-				'prefix' => 'Hello',
-			],
-		],
-	];
+	// public const array CFG_HTTP = [
+	// ];
 
 	/**
-	 * HTTP routes.
+	 * Configuration defaults used only in CLI mode.
 	 *
-	 * @var array<string, array<string, mixed>>
+	 * These values are merged after CFG_COMMON and therefore win on conflicting
+	 * associative keys within this provider.
+	 *
+	 * @var array<string|int, mixed>
 	 */
-	public const ROUTES_HTTP = [
-		'/hello.html' => [
-			'controller' => \CitOmni\ProviderSkeleton\Controller\HelloController::class,
-			'action'     => 'index',
-			'methods'    => ['GET'],
-			'options'    => [
-				'who' => 'world',
-			],
-		],
-	];
+	// public const array CFG_CLI = [
+	// ];
 
 	/**
-	 * CLI service map.
+	 * HTTP route dispatch entries contributed by this provider.
 	 *
-	 * Reuses the HTTP service map because the demo command uses the same
-	 * greeting service. Real packages may keep CLI services narrower.
+	 * Keep route definitions here rather than inside CFG_COMMON or CFG_HTTP.
+	 * The concrete route entry contract is owned by the CitOmni HTTP layer.
 	 *
-	 * @var array<string, string|array<string, mixed>>
+	 * @var array<string|int, mixed>
 	 */
-	public const MAP_CLI = self::MAP_HTTP;
+	// public const array ROUTES_HTTP = [
+	// ];
 
 	/**
-	 * CLI cfg overlay.
+	 * CLI command dispatch entries contributed by this provider.
 	 *
-	 * Reuses the HTTP cfg overlay because this skeleton exposes the same
-	 * package-level defaults in both modes.
+	 * Keep command definitions here rather than inside MAP_CLI, CFG_COMMON, or
+	 * CFG_CLI. The concrete command entry contract is owned by the CitOmni CLI layer.
 	 *
-	 * @var array<string, mixed>
+	 * @var array<string|int, mixed>
 	 */
-	public const CFG_CLI = self::CFG_HTTP;
+	// public const array COMMANDS_CLI = [
+	// ];
 
-	/**
-	 * CLI commands.
-	 *
-	 * @var array<string, array<string, mixed>>
-	 */
-	public const COMMANDS_CLI = [
-		'provider-skeleton:demo' => [
-			'command'     => \CitOmni\ProviderSkeleton\Command\DemoCommand::class,
-			'description' => 'Run the provider skeleton demo command',
-		],
-	];
+
 }
