@@ -544,15 +544,25 @@ The configuration object is read-only.
 
 Associative arrays become nested configuration objects. Lists remain arrays.
 
-Direct access to an unknown key throws.
+A direct read throws `\OutOfBoundsException` at the first missing key, at any depth. `??` and `isset()` check every node on the path and never throw on a missing key, so they hide it.
 
-Null coalescing safely provides defaults through nested configuration access:
+Read the configuration the provider owns directly. The Registry ships a default in `CFG_COMMON`, `CFG_HTTP` or `CFG_CLI` for every path the provider reads; a guard would duplicate that default and hide a missing baseline. A missing baseline is fixed in the Registry, not at the call site:
 
 ```php
-$enabled = (bool)($this->app->cfg->vendor_package->enabled ?? true);
+$enabled = (bool)$this->app->cfg->vendor_package->enabled;
 ```
 
-A provider should supply sensible defaults for the configuration it owns.
+A service option over provider-owned configuration falls back to the cfg read, with no further default:
+
+```php
+$enabled = (bool)($this->options['enabled'] ?? $this->app->cfg->vendor_package->enabled);
+```
+
+Configuration owned by the host application or another package, and a path that exists in one mode only, may be absent. Read it with `?? <default>`, and use `isset()` only to branch on whether a node exists:
+
+```php
+$timezone = (string)($this->app->cfg->locale->timezone ?? 'UTC');
+```
 
 Environment-specific values belong to the host application rather than the provider package.
 
